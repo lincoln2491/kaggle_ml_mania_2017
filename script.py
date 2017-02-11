@@ -72,7 +72,7 @@ dtest = xgb.DMatrix(test_x, label=test_y)
 param = {'bst:max_depth': 6, 'bst:eta': 1, 'silent': 1, 'objective': 'binary:logistic', 'nthread': 7,
          'eval_metric': 'logloss'}
 
-num_round = 500
+num_round = 6
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 bst = xgb.train(param, dtrain, num_round, evallist)
 
@@ -80,4 +80,4 @@ dpredict = xgb.DMatrix(predict_data)
 output = bst.predict(dpredict)
 
 sub = pd.DataFrame({'id': sample_submission.id, 'pred': output})
-sub.to_csv('submissions/sub2.csv', sep=',', index=None)
+sub.to_csv('submissions/sub3.csv', sep=',', index=None)
