@@ -1,14 +1,25 @@
 import pandas as pd
 
-from script import ordinals
 
+def load_data():
+    teams = pd.read_csv('data/Teams.csv')
+    teams.columns = [i.lower() for i in teams.columns]
 
-def get_PGH_rank_before_mathch(w_team, l_team, season, day_num):
-    tmp = ordinals[((ordinals.season == season) & (ordinals.rating_day_num <= day_num) & (ordinals.sys_name == 'PGH'))]
-    tmp_o.loc[tmp_o.loc[((tmp_o.team == 1462) & (tmp_o.season == 2016) & (ordinals.sys_name == 'PGH') & (
-    tmp_o.rating_day_num <= 130)), 'rating_day_num'].idxmax(), 'orank']
+    seasons = pd.read_csv('data/Seasons.csv')
+    seasons.columns = [i.lower() for i in seasons.columns]
 
+    rs_detailed = pd.read_csv('data/RegularSeasonDetailedResults.csv')
+    rs_detailed.columns = [i.lower() for i in rs_detailed.columns]
 
-tmp_r.apply(lambda x: tmp_o.loc[tmp_o.loc[((tmp_o.team == x['wteam']) & (tmp_o.season == 2016) & (ordinals.sys_name == 'PGH') & (tmp_o.rating_day_num <= 130)), 'rating_day_num'].idxmax(), 'orank'], axis =1)
+    t_detailed = pd.read_csv('data/TourneyDetailedResults.csv')
+    t_detailed.columns = [i.lower() for i in t_detailed.columns]
 
-tmp_r.iloc[500:510].apply(lambda x: tmp_o.loc[tmp_o.loc[((tmp_o.team == x['wteam']) & (tmp_o.season == 2016) & (tmp_o.sys_name == 'PGH') & (tmp_o.rating_day_num <= x['daynum'])), 'rating_day_num'].idxmax(), 'orank'], axis =1)
+    t_seeds = pd.read_csv('data/TourneySeeds.csv')
+    t_seeds.columns = [i.lower() for i in t_seeds.columns]
+
+    t_slots = pd.read_csv('data/TourneySlots.csv')
+    t_slots.columns = [i.lower() for i in t_slots.columns]
+
+    ordinals = pd.read_csv('data/massey_ordinals_2003-2016.csv')
+
+    return teams, seasons, rs_detailed, t_detailed, t_seeds, t_slots, ordinals

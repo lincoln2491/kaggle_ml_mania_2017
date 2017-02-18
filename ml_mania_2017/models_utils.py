@@ -1,6 +1,18 @@
 import numpy as np
 import pandas as pd
 
+columns_for_model = ['result', 'l_rank_PGH', 'h_rank_PGH', 'l_rank_SAG', 'h_rank_SAG', 'l_rank_DOK', 'h_rank_DOK',
+                     'l_rank_MAS', 'h_rank_MAS', 'l_rank_KPK', 'h_rank_KPK', 'l_rank_MOR', 'h_rank_MOR', 'l_rank_PIG',
+                     'h_rank_PIG', 'l_rank_BBT', 'h_rank_BBT', 'l_rank_POM', 'h_rank_POM', 'l_score_m10', 'h_score_m10',
+                     'l_score_om10', 'h_score_om10', 'l_fgm_m10', 'h_fgm_m10', 'l_fgm_om10', 'h_fgm_om10', 'l_fga_m10',
+                     'h_fga_m10', 'l_fga_om10', 'h_fga_om10', 'l_fgm3_m10', 'h_fgm3_m10', 'l_fgm3_om10', 'h_fgm3_om10',
+                     'l_fga3_m10', 'h_fga3_m10', 'l_fga3_om10', 'h_fga3_om10', 'l_ftm_m10', 'h_ftm_m10', 'l_ftm_om10',
+                     'h_ftm_om10', 'l_fta_m10', 'h_fta_m10', 'l_fta_om10', 'h_fta_om10', 'l_or_m10', 'h_or_m10',
+                     'l_or_om10', 'h_or_om10', 'l_dr_m10', 'h_dr_m10', 'l_dr_om10', 'h_dr_om10', 'l_ast_m10',
+                     'h_ast_m10', 'l_ast_om10', 'h_ast_om10', 'l_to_m10', 'h_to_m10', 'l_to_om10', 'h_to_om10',
+                     'l_stl_m10', 'h_stl_m10', 'l_stl_om10', 'h_stl_om10', 'l_blk_m10', 'h_blk_m10', 'l_blk_om10',
+                     'h_blk_om10', 'l_pf_m10', 'h_pf_m10', 'l_pf_om10', 'h_pf_om10']
+
 
 def change_data_l_h(detailed):
     detailed[['l_team', 'h_team', 'l_score', 'h_score', 'l_loc',
@@ -38,7 +50,56 @@ def normalize_data_to_l_h(x):
              x['wto'], x['wstl'], x['wblk'], x['wpf']])
 
 
-#optimize
+def add_statistics_to_l_h_model(detailed):
+    # field foals made 2 point calculation
+    detailed = detailed.assign(l_fgm2=detailed.l_fgm - detailed.l_fgm3)
+    detailed = detailed.assign(h_fgm2=detailed.h_fgm - detailed.h_fgm3)
+    detailed = detailed.assign(l_fga2=detailed.l_fga - detailed.l_fga3)
+    detailed = detailed.assign(h_fga2=detailed.h_fga - detailed.h_fga3)
+
+    # total rebounds
+    detailed = detailed.assign(l_tr=detailed.l_or + detailed.l_dr)
+    detailed = detailed.assign(h_tr=detailed.h_or + detailed.h_dr)
+
+    # ratio for 2/total and 3/total goals made
+    detailed = detailed.assign(l_fgm3r=detailed.l_fgm3 / detailed.l_fgm)
+    detailed = detailed.assign(h_fgm3r=detailed.h_fgm3 / detailed.h_fgm)
+
+    detailed = detailed.assign(l_fgm2r=detailed.l_fgm2 / detailed.l_fgm)
+    detailed = detailed.assign(h_fgm2r=detailed.h_fgm2 / detailed.h_fgm)
+
+    # ratio for 2/total and 3/total goals attempt
+    detailed = detailed.assign(l_fga3r=detailed.l_fga3 / detailed.l_fga)
+    detailed = detailed.assign(h_fga3r=detailed.h_fga3 / detailed.h_fga)
+
+    detailed = detailed.assign(l_fga2r=detailed.l_fga2 / detailed.l_fga)
+    detailed = detailed.assign(h_fga2r=detailed.h_fga2 / detailed.h_fga)
+
+    # ratio for goal/attempts (total, 2 or 3)
+    detailed = detailed.assign(l_fgmar=detailed.l_fgm / detailed.l_fga)
+    detailed = detailed.assign(h_fgmar=detailed.h_fgm / detailed.h_fga)
+
+    detailed = detailed.assign(l_fgma2r=detailed.l_fgm2 / detailed.l_fga2)
+    detailed = detailed.assign(h_fgma2r=detailed.h_fgm2 / detailed.h_fga2)
+
+    detailed = detailed.assign(l_fgma3r=detailed.l_fgm3 / detailed.l_fga3)
+    detailed = detailed.assign(h_fgma3r=detailed.h_fgm3 / detailed.h_fga3)
+
+    # ratio for offensive/defensive rebounds
+    detailed = detailed.assign(l_odrr=detailed.l_or / detailed.l_dr)
+    detailed = detailed.assign(h_odrr=detailed.h_or / detailed.h_dr)
+
+    # ratio for offensive/total and defensive/total rebouds
+    detailed = detailed.assign(l_orr=detailed.l_or / detailed.l_tr)
+    detailed = detailed.assign(h_orr=detailed.h_or / detailed.h_tr)
+
+    detailed = detailed.assign(l_drr=detailed.l_dr / detailed.l_tr)
+    detailed = detailed.assign(h_drr=detailed.h_dr / detailed.h_tr)
+
+    return detailed
+
+
+# optimize
 def add_info_about_rank_before_match(rs_detailed, ordinals, year=2016, sys_name='PGH'):
     tmp_o = ordinals[((ordinals.season == year) & (ordinals.sys_name == sys_name))].copy()
     tmp_r = rs_detailed[rs_detailed.season == year].copy()
@@ -68,3 +129,25 @@ def create_predict_data_for_model(sample_submission, ordinals, sys_name='PGH'):
                                                              axis=1)
 
     return sample_submission
+
+
+def get_mean_from_last_n_matches(team_id, detailed, day, feature, n=10):
+    values = \
+        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
+            'daynum').iloc[-n:].loc[detailed.l_team == team_id, 'l_' + feature].tolist()
+    values.extend(
+        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
+            'daynum').iloc[-n:].loc[detailed.h_team == team_id, 'h_' + feature].tolist())
+
+    return np.mean(values)
+
+
+def get_opposite_mean_from_last_n_matches(team_id, detailed, day, feature, n=10):
+    values = \
+        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
+            'daynum').iloc[-n:].loc[detailed.l_team == team_id, 'h_' + feature].tolist()
+    values.extend(
+        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
+            'daynum').iloc[-n:].loc[detailed.h_team == team_id, 'l_' + feature].tolist())
+
+    return np.mean(values)
