@@ -19,7 +19,7 @@ def change_data_l_h(detailed):
               'l_fgm', 'l_fga', 'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk',
               'l_pf', 'l_elo_all',
               'h_fgm', 'h_fga', 'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl', 'h_blk',
-              'h_pf', 'r_elo_all'
+              'h_pf', 'h_elo_all'
               ]] = detailed.apply(lambda x: normalize_data_to_l_h(x), axis=1)
 
     detailed = detailed.drop(
