@@ -17,15 +17,16 @@ columns_for_model = ['result', 'l_rank_PGH', 'h_rank_PGH', 'l_rank_SAG', 'h_rank
 def change_data_l_h(detailed):
     detailed[['l_team', 'h_team', 'l_score', 'h_score', 'l_loc',
               'l_fgm', 'l_fga', 'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk',
-              'l_pf',
+              'l_pf', 'l_elo_all',
               'h_fgm', 'h_fga', 'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl', 'h_blk',
-              'h_pf'
+              'h_pf', 'r_elo_all'
               ]] = detailed.apply(lambda x: normalize_data_to_l_h(x), axis=1)
 
     detailed = detailed.drop(
         ['wteam', 'wscore', 'lteam', 'lscore', 'wloc',
          'wfgm', 'wfga', 'wfgm3', 'wfga3', 'wftm', 'wfta', 'wor', 'wdr', 'wast', 'wto', 'wstl', 'wblk', 'wpf',
-         'lfgm', 'lfga', 'lfgm3', 'lfga3', 'lftm', 'lfta', 'lor', 'ldr', 'last', 'lto', 'lstl', 'lblk', 'lpf'
+         'lfgm', 'lfga', 'lfgm3', 'lfga3', 'lftm', 'lfta', 'lor', 'ldr', 'last', 'lto', 'lstl', 'lblk', 'lpf', 'welo',
+         'lelo',
          ], axis=1)
     detailed = detailed.assign(result=np.where(detailed['l_score'] > detailed['h_score'], 1, 0))
     return detailed
@@ -36,18 +37,18 @@ def normalize_data_to_l_h(x):
         return pd.Series(
             [x['wteam'], x['lteam'], x['wscore'], x['lscore'], x['wloc'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf'],
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'],
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf']])
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo']])
     else:
         d = {'H': 'A', 'A': 'H'}
         l_loc = d[x['wloc']] if d.has_key(x['wloc']) else x['wloc']
         return pd.Series(
             [x['lteam'], x['wteam'], x['lscore'], x['wscore'], l_loc,
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf'],
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf']])
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo']])
 
 
 def add_statistics_to_l_h_model(detailed):
@@ -131,15 +132,23 @@ def create_predict_data_for_model(sample_submission, ordinals, sys_name='PGH'):
     return sample_submission
 
 
-def get_mean_from_last_n_matches(team_id, detailed, day, feature, n=10):
-    values = \
+def get_mean_from_last_n_matches(team_id, detailed, day, feature_list, is_l=True, n=10):
+    l_detailed = \
         detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
-            'daynum').iloc[-n:].loc[detailed.l_team == team_id, 'l_' + feature].tolist()
-    values.extend(
+            'daynum').iloc[-n:].loc[detailed.l_team == team_id]
+    h_detailed = \
         detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
-            'daynum').iloc[-n:].loc[detailed.h_team == team_id, 'h_' + feature].tolist())
+            'daynum').iloc[-n:].loc[detailed.h_team == team_id]
 
-    return np.mean(values)
+    result = dict()
+
+    label_prefix = 'l_' if is_l else 'h_'
+    for feature in feature_list:
+        result[label_prefix + feature + '_m' + str(n)] = \
+            (l_detailed['l_' + feature].sum() + h_detailed['h_' + feature].sum()) / float(n)
+        result[label_prefix + feature + '_om' + str(n)] = \
+            (l_detailed['h_' + feature].sum() + h_detailed['l_' + feature].sum()) / float(n)
+    return pd.Series(result)
 
 
 def get_opposite_mean_from_last_n_matches(team_id, detailed, day, feature, n=10):

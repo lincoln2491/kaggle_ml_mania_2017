@@ -8,10 +8,10 @@ def load_data():
     seasons = pd.read_csv('data/Seasons.csv')
     seasons.columns = [i.lower() for i in seasons.columns]
 
-    rs_detailed = pd.read_csv('data/RegularSeasonDetailedResults.csv')
+    rs_detailed = pd.read_csv('data/rs_detailed-elo.csv', sep = ';')
     rs_detailed.columns = [i.lower() for i in rs_detailed.columns]
 
-    t_detailed = pd.read_csv('data/TourneyDetailedResults.csv')
+    t_detailed = pd.read_csv('data/t_detailed-elo.csv', sep = ';')
     t_detailed.columns = [i.lower() for i in t_detailed.columns]
 
     t_seeds = pd.read_csv('data/TourneySeeds.csv')
