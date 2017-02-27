@@ -1,17 +1,12 @@
 import numpy as np
 import pandas as pd
 
-columns_for_model = ['result', 'l_rank_PGH', 'h_rank_PGH', 'l_rank_SAG', 'h_rank_SAG', 'l_rank_DOK', 'h_rank_DOK',
-                     'l_rank_MAS', 'h_rank_MAS', 'l_rank_KPK', 'h_rank_KPK', 'l_rank_MOR', 'h_rank_MOR', 'l_rank_PIG',
-                     'h_rank_PIG', 'l_rank_BBT', 'h_rank_BBT', 'l_rank_POM', 'h_rank_POM', 'l_score_m10', 'h_score_m10',
-                     'l_score_om10', 'h_score_om10', 'l_fgm_m10', 'h_fgm_m10', 'l_fgm_om10', 'h_fgm_om10', 'l_fga_m10',
-                     'h_fga_m10', 'l_fga_om10', 'h_fga_om10', 'l_fgm3_m10', 'h_fgm3_m10', 'l_fgm3_om10', 'h_fgm3_om10',
-                     'l_fga3_m10', 'h_fga3_m10', 'l_fga3_om10', 'h_fga3_om10', 'l_ftm_m10', 'h_ftm_m10', 'l_ftm_om10',
-                     'h_ftm_om10', 'l_fta_m10', 'h_fta_m10', 'l_fta_om10', 'h_fta_om10', 'l_or_m10', 'h_or_m10',
-                     'l_or_om10', 'h_or_om10', 'l_dr_m10', 'h_dr_m10', 'l_dr_om10', 'h_dr_om10', 'l_ast_m10',
-                     'h_ast_m10', 'l_ast_om10', 'h_ast_om10', 'l_to_m10', 'h_to_m10', 'l_to_om10', 'h_to_om10',
-                     'l_stl_m10', 'h_stl_m10', 'l_stl_om10', 'h_stl_om10', 'l_blk_m10', 'h_blk_m10', 'l_blk_om10',
-                     'h_blk_om10', 'l_pf_m10', 'h_pf_m10', 'l_pf_om10', 'h_pf_om10']
+columns_to_drop = ['season', 'daynum', 'numot', 'l_team', 'h_team', 'l_score', 'h_score', 'l_loc', 'l_fgm', 'l_fga',
+                   'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk', 'l_pf',
+                   'h_fgm', 'h_fga', 'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl',
+                   'h_blk', 'h_pf', 'l_fgm2', 'h_fgm2', 'l_fga2', 'h_fga2', 'l_tr', 'h_tr', 'l_fgm3r', 'h_fgm3r',
+                   'l_fgm2r', 'h_fgm2r', 'l_fga3r', 'h_fga3r', 'l_fga2r', 'h_fga2r', 'l_fgmar', 'h_fgmar', 'l_fgma2r',
+                   'h_fgma2r', 'l_fgma3r', 'h_fgma3r', 'l_odrr', 'h_odrr', 'l_orr', 'h_orr', 'l_drr', 'h_drr', ]
 
 
 def change_data_l_h(detailed):

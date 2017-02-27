@@ -100,3 +100,10 @@ def create_submission_file_and_save_model(model, dpredict, sample_submission):
     print 'submission nr: ' + str(next_nr)
     model.save_model('models/model' + str(next_nr) + '.mod')
     return sub
+
+
+def add_rankings_diff(detailed):
+    for ranking in ranking_names:
+        ranking = ranking.lower()
+        detailed.loc[:, 'diff_' + ranking] = detailed['l_rank_' + ranking] - detailed['h_rank_' + ranking]
+    return detailed
