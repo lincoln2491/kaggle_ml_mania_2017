@@ -1,26 +1,11 @@
-# train = data.loc[:, ['low_rank', 'high_rank']]
-# labels = data.result
+from plotly import offline as plt
+from plotly import graph_objs as go
 
-# tmp_r['l_rank'] = np.nan
-# tmp_r['w_rank'] = np.nan
-#
-# tmp_r.w_rank = tmp_r.apply(lambda x: tmp_o.loc[tmp_o.loc[((tmp_o.team == x['wteam']) & (tmp_o.season == 2016) & (
-#     tmp_o.sys_name == 'PGH') & (tmp_o.rating_day_num <= x['daynum'])), 'rating_day_num'].idxmax(), 'orank'] if x[
-#                                                                                                                    'daynum'] >= 16 else np.nan,
-#                            axis=1)
-# tmp_r.l_rank = tmp_r.apply(lambda x: tmp_o.loc[tmp_o.loc[((tmp_o.team == x['lteam']) & (tmp_o.season == 2016) & (
-#     tmp_o.sys_name == 'PGH') & (tmp_o.rating_day_num <= x['daynum'])), 'rating_day_num'].idxmax(), 'orank'] if x[
-#                                                                                                                    'daynum'] >= 16 else np.nan,
-#                            axis=1)
-#
-# trace_line = go.Scatter(x=range(352), y=range(352), mode="lines")
-# trace_away = go.Scatter(x=tmp_r.w_rank[tmp_r.wloc == 'A'], y=tmp_r.l_rank[tmp_r.wloc == 'A'], mode='markers',
-#                         name='away')
-# trace_home = go.Scatter(x=tmp_r.w_rank[tmp_r.wloc == 'H'], y=tmp_r.l_rank[tmp_r.wloc == 'H'], mode='markers',
-#                         name='home')
-# trace_neutral = go.Scatter(x=tmp_r.w_rank[tmp_r.wloc == 'N'], y=tmp_r.l_rank[tmp_r.wloc == 'N'], mode='markers',
-#                            name='neutral')
-# offline.plot([trace_home, trace_away, trace_neutral, trace_line], filename='ranks')
-# np.minimum()
-#
-#
+
+def plot_opposite_features(data, feature):
+    df_l = data[data.result == 1]
+    df_h = data[data.result == 0]
+    trace_l = go.Scatter(x=df_l['l_' + feature], y=df_l['h_' + feature], mode='markers', name='l')
+    trace_h = go.Scatter(x=df_h['l_' + feature], y=df_h['h_' + feature], mode='markers', name='h')
+    trace_line = go.Scatter(x=range(int(data['l_' + feature].max())), y=range(int(data['l_' + feature].max())), mode="lines")
+    plt.plot([trace_l, trace_h, trace_line])
