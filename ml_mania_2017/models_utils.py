@@ -12,16 +12,16 @@ columns_to_drop = ['season', 'daynum', 'numot', 'l_team', 'h_team', 'l_score', '
 def change_data_l_h(detailed):
     detailed[['l_team', 'h_team', 'l_score', 'h_score', 'l_loc',
               'l_fgm', 'l_fga', 'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk',
-              'l_pf', 'l_elo_all',
+              'l_pf', 'l_elo_all', 'l_elo_season',
               'h_fgm', 'h_fga', 'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl', 'h_blk',
-              'h_pf', 'h_elo_all'
+              'h_pf', 'h_elo_all', 'h_elo_season'
               ]] = detailed.apply(lambda x: normalize_data_to_l_h(x), axis=1)
 
     detailed = detailed.drop(
         ['wteam', 'wscore', 'lteam', 'lscore', 'wloc',
          'wfgm', 'wfga', 'wfgm3', 'wfga3', 'wftm', 'wfta', 'wor', 'wdr', 'wast', 'wto', 'wstl', 'wblk', 'wpf',
          'lfgm', 'lfga', 'lfgm3', 'lfga3', 'lftm', 'lfta', 'lor', 'ldr', 'last', 'lto', 'lstl', 'lblk', 'lpf', 'welo',
-         'lelo',
+         'lelo', 'weloSeason', 'leloSeason'
          ], axis=1)
     detailed = detailed.assign(result=np.where(detailed['l_score'] > detailed['h_score'], 1, 0))
     return detailed
@@ -32,18 +32,18 @@ def normalize_data_to_l_h(x):
         return pd.Series(
             [x['wteam'], x['lteam'], x['wscore'], x['lscore'], x['wloc'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'],
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloSeason'],
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo']])
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloSeason']])
     else:
         d = {'H': 'A', 'A': 'H'}
         l_loc = d[x['wloc']] if d.has_key(x['wloc']) else x['wloc']
         return pd.Series(
             [x['lteam'], x['wteam'], x['lscore'], x['wscore'], l_loc,
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'],
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloSeason'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo']])
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloSeason']])
 
 
 def add_statistics_to_l_h_model(detailed):
@@ -128,6 +128,8 @@ def create_predict_data_for_model(sample_submission, ordinals, sys_name='PGH'):
 
 
 def get_mean_from_last_n_matches(team_id, detailed, day, feature_list, is_l=True, n=10):
+    tmp_detailed = detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
+        'daynum').iloc[-n:]
     l_detailed = \
         detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
             'daynum').iloc[-n:].loc[detailed.l_team == team_id]
@@ -135,14 +137,18 @@ def get_mean_from_last_n_matches(team_id, detailed, day, feature_list, is_l=True
         detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
             'daynum').iloc[-n:].loc[detailed.h_team == team_id]
 
+    y = range(n)
     result = dict()
 
     label_prefix = 'l_' if is_l else 'h_'
     for feature in feature_list:
+        values = tmp_detailed.apply(lambda x: x['l_' + feature] if x['l_team'] == team_id else x['h_team'], axis=1).tolist()
+
         result[label_prefix + feature + '_m' + str(n)] = \
             (l_detailed['l_' + feature].sum() + h_detailed['h_' + feature].sum()) / float(n)
         result[label_prefix + feature + '_om' + str(n)] = \
             (l_detailed['h_' + feature].sum() + h_detailed['l_' + feature].sum()) / float(n)
+    result['numot_m' + str(n)] = (l_detailed['numot'].sum() + h_detailed['numot'].sum()) / float(n)
     return pd.Series(result)
 
 
@@ -155,3 +161,29 @@ def get_opposite_mean_from_last_n_matches(team_id, detailed, day, feature, n=10)
             'daynum').iloc[-n:].loc[detailed.h_team == team_id, 'l_' + feature].tolist())
 
     return np.mean(values)
+
+
+def add_geo_data(rs_detailed, t_detailed, team_geog, match_geog):
+    rs_detailed = add_team_lat_lon(rs_detailed, team_geog)
+    t_detailed = add_team_lat_lon(t_detailed, team_geog)
+
+    rs_detailed['home_id'] = rs_detailed.loc[rs_detailed.l_loc == 'H', 'l_team'].append(rs_detailed.loc[rs_detailed.l_loc == 'A', 'h_team'])
+    rs_detailed = rs_detailed.merge(team_geog.rename(columns={'lat': 'stadium_lat', 'lng': 'stadium_lon'}), left_on='home_id', right_on='team_id'). \
+        drop(['home_id', 'team_id'], axis=1)
+
+    match_geog = match_geog.assign(l_team=match_geog[['wteam', 'lteam']].min(axis=1)).assign(h_team=match_geog[['wteam', 'lteam']].max(axis=1))
+    t_detailed = t_detailed.merge(match_geog[['season', 'daynum', 'l_team', 'h_team', 'lat', 'lng']]).rename(
+        columns={'lat': 'stadium_lat', 'lng': 'stadium_lon'})
+    return rs_detailed, t_detailed
+
+
+def add_team_lat_lon(detailed, team_geog):
+    detailed = detailed.merge(team_geog.rename(columns={'lat': 'l_lat', 'lng': 'l_lon'}), left_on='l_team', right_on='team_id').drop('team_id', axis=1). \
+        merge(team_geog.rename(columns={'lat': 'h_lat', 'lng': 'h_lon'}), left_on='h_team', right_on='team_id').drop('team_id', axis=1)
+    return detailed
+
+
+def get_days_before_match(rs_detailed, t_detailed, year):
+    data = rs_detailed.append(t_detailed).sort_values(['season', 'daynum'])
+
+    data.assign
