@@ -39,41 +39,41 @@ def create_train_set_for_year(rs_detailed, ordinals, t_detailed, is_train=True, 
     help_data = add_statistics_to_l_h_model(help_data)
     print str(datetime.now()) + ' statistics added'
 
-    features_m10 = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf',
-                    'fgm2', 'fga2', 'tr', 'fgm3r', 'fgm2r', 'fga3r', 'fga2r', 'fgmar', 'fgma2r', 'fgma3r', 'odrr',
-                    'orr', 'drr']
+    features_m = ['score', 'fgm', 'fga', 'fgm3', 'fga3', 'ftm', 'fta', 'or', 'dr', 'ast', 'to', 'stl', 'blk', 'pf',
+                  'fgm2', 'fga2', 'tr', 'fgm3r', 'fgm2r', 'fga3r', 'fga2r', 'fgmar', 'fgma2r', 'fgma3r', 'odrr',
+                  'orr', 'drr', 'elo_all', 'elo_season']
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m10), axis=1),
+        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m), axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 1 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m10, n=5), axis=1),
+        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m, n=5), axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 2 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m10, n=3), axis=1),
+        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m, n=3), axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 3 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m10, n=1), axis=1),
+        lambda x: get_mean_from_last_n_matches(x['l_team'], help_data, x['daynum'], features_m, n=1), axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 4 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m10, is_l=False), axis=1),
+        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m, is_l=False), axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 5 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m10, is_l=False, n=5),
+        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m, is_l=False, n=5),
         axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 6 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m10, is_l=False, n=3),
+        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m, is_l=False, n=3),
         axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 7 added'
     data = data.merge(data.apply(
-        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m10, is_l=False, n=1),
+        lambda x: get_mean_from_last_n_matches(x['h_team'], help_data, x['daynum'], features_m, is_l=False, n=1),
         axis=1),
         left_index=True, right_index=True)
     print str(datetime.now()) + ' mean 8 added'
@@ -102,8 +102,15 @@ def create_submission_file_and_save_model(model, dpredict, sample_submission):
     return sub
 
 
+# care about this is not copy
 def add_rankings_diff(detailed):
     for ranking in ranking_names:
         ranking = ranking.lower()
         detailed.loc[:, 'diff_' + ranking] = detailed['l_rank_' + ranking] - detailed['h_rank_' + ranking]
+    return detailed
+
+
+def add_diffs_for_columns(detailed, columns):
+    for column in columns:
+        detailed.loc[:, 'diff_' + column] = detailed['l_' + column] - detailed['h_' + column]
     return detailed

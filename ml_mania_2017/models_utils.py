@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 
-columns_to_drop = ['season', 'daynum', 'numot', 'l_team', 'h_team', 'l_score', 'h_score', 'l_loc', 'l_fgm', 'l_fga',
-                   'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk', 'l_pf',
-                   'h_fgm', 'h_fga', 'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl',
-                   'h_blk', 'h_pf', 'l_fgm2', 'h_fgm2', 'l_fga2', 'h_fga2', 'l_tr', 'h_tr', 'l_fgm3r', 'h_fgm3r',
-                   'l_fgm2r', 'h_fgm2r', 'l_fga3r', 'h_fga3r', 'l_fga2r', 'h_fga2r', 'l_fgmar', 'h_fgmar', 'l_fgma2r',
-                   'h_fgma2r', 'l_fgma3r', 'h_fgma3r', 'l_odrr', 'h_odrr', 'l_orr', 'h_orr', 'l_drr', 'h_drr', ]
+columns_to_drop = ['l_fgm', 'l_fga', 'l_fgm3', 'l_fga3', 'l_ftm', 'l_fta', 'l_or', 'l_dr', 'l_ast', 'l_to', 'l_stl', 'l_blk', 'l_pf', 'h_fgm', 'h_fga',
+                   'h_fgm3', 'h_fga3', 'h_ftm', 'h_fta', 'h_or', 'h_dr', 'h_ast', 'h_to', 'h_stl', 'h_blk', 'h_pf', 'l_fgm2', 'h_fgm2', 'l_fga2', 'h_fga2',
+                   'l_tr', 'h_tr', 'l_fgm3r', 'h_fgm3r', 'l_fgm2r', 'h_fgm2r', 'l_fga3r', 'h_fga3r', 'l_fga2r', 'h_fga2r', 'l_fgmar', 'h_fgmar', 'l_fgma2r',
+                   'h_fgma2r', 'l_fgma3r', 'h_fgma3r', 'l_odrr', 'h_odrr', 'l_orr', 'h_orr', 'l_drr', 'h_drr']
 
 
 def change_data_l_h(detailed):
@@ -21,7 +20,7 @@ def change_data_l_h(detailed):
         ['wteam', 'wscore', 'lteam', 'lscore', 'wloc',
          'wfgm', 'wfga', 'wfgm3', 'wfga3', 'wftm', 'wfta', 'wor', 'wdr', 'wast', 'wto', 'wstl', 'wblk', 'wpf',
          'lfgm', 'lfga', 'lfgm3', 'lfga3', 'lftm', 'lfta', 'lor', 'ldr', 'last', 'lto', 'lstl', 'lblk', 'lpf', 'welo',
-         'lelo', 'weloSeason', 'leloSeason'
+         'lelo', 'weloseason', 'leloseason'
          ], axis=1)
     detailed = detailed.assign(result=np.where(detailed['l_score'] > detailed['h_score'], 1, 0))
     return detailed
@@ -32,18 +31,18 @@ def normalize_data_to_l_h(x):
         return pd.Series(
             [x['wteam'], x['lteam'], x['wscore'], x['lscore'], x['wloc'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloSeason'],
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloseason'],
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloSeason']])
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloseason']])
     else:
         d = {'H': 'A', 'A': 'H'}
         l_loc = d[x['wloc']] if d.has_key(x['wloc']) else x['wloc']
         return pd.Series(
             [x['lteam'], x['wteam'], x['lscore'], x['wscore'], l_loc,
              x['lfgm'], x['lfga'], x['lfgm3'], x['lfga3'], x['lftm'], x['lfta'], x['lor'], x['ldr'], x['last'],
-             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloSeason'],
+             x['lto'], x['lstl'], x['lblk'], x['lpf'], x['lelo'], x['leloseason'],
              x['wfgm'], x['wfga'], x['wfgm3'], x['wfga3'], x['wftm'], x['wfta'], x['wor'], x['wdr'], x['wast'],
-             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloSeason']])
+             x['wto'], x['wstl'], x['wblk'], x['wpf'], x['welo'], x['weloseason']])
 
 
 def add_statistics_to_l_h_model(detailed):
@@ -130,25 +129,47 @@ def create_predict_data_for_model(sample_submission, ordinals, sys_name='PGH'):
 def get_mean_from_last_n_matches(team_id, detailed, day, feature_list, is_l=True, n=10):
     tmp_detailed = detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
         'daynum').iloc[-n:]
-    l_detailed = \
-        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
-            'daynum').iloc[-n:].loc[detailed.l_team == team_id]
-    h_detailed = \
-        detailed[((detailed.l_team == team_id) | (detailed.h_team == team_id)) & (detailed.daynum < day)].sort_values(
-            'daynum').iloc[-n:].loc[detailed.h_team == team_id]
 
-    y = range(n)
+    y = range(tmp_detailed.shape[0])
     result = dict()
 
     label_prefix = 'l_' if is_l else 'h_'
     for feature in feature_list:
-        values = tmp_detailed.apply(lambda x: x['l_' + feature] if x['l_team'] == team_id else x['h_team'], axis=1).tolist()
+        try:
+            values = tmp_detailed.apply(lambda x: x['l_' + feature] if x['l_team'] == team_id else x['h_team'], axis=1).tolist()
+            values_op = tmp_detailed.apply(lambda x: x['l_' + feature] if x['h_team'] == team_id else x['l_team'], axis=1).tolist()
+        except:
+            values = []
+            values_op = []
 
-        result[label_prefix + feature + '_m' + str(n)] = \
-            (l_detailed['l_' + feature].sum() + h_detailed['h_' + feature].sum()) / float(n)
-        result[label_prefix + feature + '_om' + str(n)] = \
-            (l_detailed['h_' + feature].sum() + h_detailed['l_' + feature].sum()) / float(n)
-    result['numot_m' + str(n)] = (l_detailed['numot'].sum() + h_detailed['numot'].sum()) / float(n)
+        result[label_prefix + feature + '_m' + str(n)] = np.mean(values)
+        result[label_prefix + feature + '_om' + str(n)] = np.mean(values_op)
+        result[label_prefix + feature + '_std' + str(n)] = np.std(values)
+        result[label_prefix + feature + '_ostd' + str(n)] = np.std(values_op)
+        if n > 1:
+            try:
+                slope, intercept, rval, pval, stderr = linregress(values, y)
+            except ValueError:
+                slope = intercept = rval = pval = stderr = np.NaN
+            result[label_prefix + feature + '_slope' + str(n)] = slope
+            result[label_prefix + feature + '_int' + str(n)] = intercept
+            result[label_prefix + feature + '_rval' + str(n)] = rval
+            result[label_prefix + feature + '_pval' + str(n)] = pval
+            result[label_prefix + feature + '_stderr' + str(n)] = stderr
+
+            try:
+                slope, intercept, rval, pval, stderr = linregress(values_op, y)
+            except ValueError:
+                slope = intercept = rval = pval = stderr = np.NaN
+            result[label_prefix + feature + '_slope' + str(n)] = slope
+            result[label_prefix + feature + '_oint' + str(n)] = intercept
+            result[label_prefix + feature + '_orval' + str(n)] = rval
+            result[label_prefix + feature + '_opval' + str(n)] = pval
+            result[label_prefix + feature + '_ostderr' + str(n)] = stderr
+
+    result['numot_m' + str(n)] = tmp_detailed.numot.mean()
+    result['numot_std' + str(n)] = tmp_detailed.numot.std()
+
     return pd.Series(result)
 
 
