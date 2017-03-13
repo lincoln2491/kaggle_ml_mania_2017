@@ -167,8 +167,8 @@ def get_mean_from_last_n_matches(team_id, detailed, day, feature_list, is_l=True
             result[label_prefix + feature + '_opval' + str(n)] = pval
             result[label_prefix + feature + '_ostderr' + str(n)] = stderr
 
-    result['numot_m' + str(n)] = tmp_detailed.numot.mean()
-    result['numot_std' + str(n)] = tmp_detailed.numot.std()
+    result[label_prefix + '_numot_m' + str(n)] = tmp_detailed.numot.mean()
+    result[label_prefix + '_numot_std' + str(n)] = tmp_detailed.numot.std()
 
     return pd.Series(result)
 

@@ -65,29 +65,26 @@ t_detailed = t_detailed.drop(['season', 'daynum', 'type', 'l_team', 'h_team', 'l
 #
 # col = [i for i in rs_detailed.columns if 'diff_' in i]
 # col.append('result')
-tmp = rs_detailed.count(axis=0)
-cols = tmp[tmp > 60000].index
+data = rs_detailed
+tournament_data = t_detailed
 
-rs_detailed = rs_detailed[cols]
-t_detailed = t_detailed[cols]
-# data = rs_detailed
-# tournament_data = t_detailed
-
-rs_detailed = rs_detailed[rs_detailed.notnull().all(axis=1)]
-# data = data[col]
-# tournament_data = tournament_data[col]
-
-# data = data.drop(columns_to_drop, axis=1)
-# data = data.drop('diff_score', axis=1)
-# tournament_data = tournament_data.drop(columns_to_drop, axis=1)
+# tmp = data.count(axis=0)
+# cols = tmp[tmp > 60000].index
+#
+# data = data[cols]
+# tournament_data = tournament_data[cols]
+#
+# data = data[data.notnull().all(axis=1)]
+# tournament_data = tournament_data[tournament_data.notnull().all(axis=1)]
 
 
 
-train_x = rs_detailed.drop('result', 1)
-train_y = rs_detailed['result']
 
-test_x = t_detailed.drop('result', 1).copy()
-test_y = t_detailed['result'].copy()
+train_x = data.drop('result', 1)
+train_y = data['result']
+
+test_x = tournament_data.drop('result', 1)
+test_y = tournament_data['result']
 
 dtrain = xgb.DMatrix(train_x, label=train_y)
 dtest = xgb.DMatrix(test_x, label=test_y)
