@@ -9,11 +9,11 @@ def load_data():
     seasons.columns = [i.lower() for i in seasons.columns]
 
     rs_detailed = pd.read_csv('data/rs_detailed-all.csv', sep=';')
-    # rs_detailed = pd.read_csv('data/train.csv', sep=';')
+    # rs_detailed = pd.read_csv('data/rs_detailed-elo.csv', sep=';')
     rs_detailed.columns = [i.lower() for i in rs_detailed.columns]
 
     t_detailed = pd.read_csv('data/t_detailed-all.csv', sep=';')
-    # t_detailed = pd.read_csv('data/valid.csv', sep=';')
+    # t_detailed = pd.read_csv('data/t_detailed-elo.csv', sep=';')
     t_detailed.columns = [i.lower() for i in t_detailed.columns]
 
     t_seeds = pd.read_csv('data/TourneySeeds.csv')
@@ -27,4 +27,6 @@ def load_data():
     match_geog = pd.read_csv('data/TourneyGeog_Thru2016.csv')
     team_geog = pd.read_csv('data/TeamGeog.csv')
 
-    return teams, seasons, rs_detailed, t_detailed, t_seeds, t_slots, ordinals, match_geog, team_geog
+    sample_submission = pd.read_csv('data/sample_submission-all.csv', sep=';')
+    sample_submission.columns = [i.lower() for i in sample_submission.columns]
+    return teams, seasons, rs_detailed, t_detailed, t_seeds, t_slots, ordinals, match_geog, team_geog, sample_submission

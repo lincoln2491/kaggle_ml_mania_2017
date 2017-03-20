@@ -14,7 +14,7 @@ ranking_names = ['PGH', 'SAG', 'DOK',
                  'POM']
 
 
-def create_train_set_for_year(rs_detailed, ordinals, t_detailed, is_train=True, year=2016):
+def create_train_set_for_year(rs_detailed, ordinals, t_detailed, is_train=True, year=2016, is_sample=False):
     print str(datetime.now()) + ' start'
     if is_train:
         data = rs_detailed
@@ -28,14 +28,16 @@ def create_train_set_for_year(rs_detailed, ordinals, t_detailed, is_train=True, 
     ordinals = ordinals[ordinals.season == year].copy()
     help_data = help_data[help_data.season == year].copy()
     print str(datetime.now()) + ' data set added'
-    data = change_data_l_h(data)
+    if not is_sample:
+        data = change_data_l_h(data)
     help_data = change_data_l_h(help_data)
     print str(datetime.now()) + ' data changed'
     for ranking in ranking_names:
         data = add_info_about_rank_before_match(data, ordinals, year, ranking)
         print str(datetime.now()) + ' ' + ranking + ' added'
 
-    data = add_statistics_to_l_h_model(data)
+    if not is_sample:
+        data = add_statistics_to_l_h_model(data)
     help_data = add_statistics_to_l_h_model(help_data)
     print str(datetime.now()) + ' statistics added'
 
@@ -84,33 +86,36 @@ def create_train_set_for_year(rs_detailed, ordinals, t_detailed, is_train=True, 
 def create_and_train_model(dtrain, dtest):
     param = {'bst:max_depth': 10, 'bst:eta': 0.1, 'silent': 1, 'objective': 'binary:logistic', 'nthread': 7,
              'eval_metric': ['logloss', 'error']}
-    num_round = 100
+    num_round = 12
     evallist = [(dtest, 'eval'), (dtrain, 'train')]
     bst = xgb.train(param, dtrain, num_round, evallist)
     return bst
 
 
-def create_submission_file_and_save_model(model, dpredict, sample_submission):
-    output = model.predict(dpredict)
+def predict(model, sample_submission):
+    id = sample_submission.id
+    sample_submission = sample_submission[model.feature_names]
+    dpredict = xgb.DMatrix(sample_submission)
+    pred = model.predict(dpredict)
+    return pd.DataFrame(dict(Id=id, Pred=pred))
 
-    sub = pd.DataFrame({'id': sample_submission.id, 'pred': output})
 
+def save_submission_and_model(sample_submission, model):
     next_nr = max([int(f.replace('sub', '').replace('.csv', '')) for f in os.listdir('submissions')]) + 1
-    sub.to_csv('submissions/sub' + str(next_nr) + '.csv', sep=',', index=None)
+    sample_submission.to_csv('submissions/sub' + str(next_nr) + '.csv', sep=',', index=None)
     print 'submission nr: ' + str(next_nr)
     model.save_model('models/model' + str(next_nr) + '.mod')
-    return sub
 
 
 # care about this is not copy
 def add_rankings_diff(detailed):
     for ranking in ranking_names:
         ranking = ranking.lower()
-        detailed.loc[:, 'diff_' + ranking] = detailed['l_rank_' + ranking] - detailed['h_rank_' + ranking]
+        detailed.loc[:, 'diff_' + ranking] = (detailed['l_rank_' + ranking] - detailed['h_rank_' + ranking]).astype(np.float32)
     return detailed
 
 
 def add_diffs_for_columns(detailed, columns):
     for column in columns:
-        detailed.loc[:, 'diff_' + column] = detailed['l_' + column] - detailed['h_' + column]
+        detailed.loc[:, 'diff_' + column] = (detailed['l_' + column] - detailed['h_' + column]).astype(np.float32)
     return detailed
